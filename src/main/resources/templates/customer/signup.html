@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Sign Up - Rate Limiter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+        .signup-container {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .signup-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .signup-header i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .signup-body {
+            padding: 2.5rem;
+        }
+        .form-floating {
+            margin-bottom: 1.25rem;
+        }
+        .form-floating input {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+        .form-floating input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-signup {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.875rem;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .login-link {
+            text-align: center;
+            padding: 1.5rem 2.5rem;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            background: #e0e0e0;
+            overflow: hidden;
+        }
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s;
+            background: #dc3545;
+        }
+        .password-strength-bar.weak { width: 33%; background: #dc3545; }
+        .password-strength-bar.medium { width: 66%; background: #ffc107; }
+        .password-strength-bar.strong { width: 100%; background: #28a745; }
+    </style>
+</head>
+<body>
+<div class="signup-container">
+    <div class="signup-header">
+        <i class="bi bi-person-plus-fill"></i>
+        <h2 class="mb-0 fw-bold">Create Account</h2>
+        <p class="mb-0 opacity-75">Join Rate Limiter today</p>
+    </div>
+
+    <div class="signup-body">
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Server-side error -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Signup Form -->
+        <form id="signupForm" method="post" th:action="@{/customer/signup}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <div class="form-floating">
+                <input type="text"
+                       class="form-control"
+                       id="name"
+                       name="name"
+                       placeholder="Your Name"
+                       required
+                       autofocus>
+                <label for="name"><i class="bi bi-person me-2"></i>Full Name</label>
+            </div>
+
+            <div class="form-floating">
+                <input type="email"
+                       class="form-control"
+                       id="email"
+                       name="email"
+                       placeholder="name@example.com"
+                       required>
+                <label for="email"><i class="bi bi-envelope me-2"></i>Email address</label>
+            </div>
+
+            <div class="form-floating">
+                <input type="password"
+                       class="form-control"
+                       id="password"
+                       name="password"
+                       placeholder="Password"
+                       required
+                       minlength="6">
+                <label for="password"><i class="bi bi-lock me-2"></i>Password</label>
+            </div><div class="password-strength">
+            <div class="password-strength-bar" id="passwordStrengthBar"></div>
+        </div>
+            <small class="text-muted d-block mb-3">Minimum 6 characters</small>
+
+            <div class="form-floating">
+                <input type="text"
+                       class="form-control"
+                       id="companyName"
+                       name="companyName"
+                       placeholder="Company Name"
+                       required>
+                <label for="companyName"><i class="bi bi-building me-2"></i>Company Name</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-signup w-100" id="signupBtn">
+                <span id="signupBtnText">
+                    <i class="bi bi-check-circle me-2"></i>Create Account
+                </span>
+                <span id="signupBtnSpinner" class="d-none">
+                    <span class="spinner-border spinner-border-sm me-2"></span>Creating account...
+                </span>
+            </button>
+        </form>
+    </div>
+
+    <div class="login-link">
+        <p class="mb-0">
+            Already have an account? <a th:href="@{/customer/login}">Sign in</a>
+        </p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Password strength indicator
+    document.getElementById('password').addEventListener('input', function() {
+        const password = this.value;
+        const strengthBar = document.getElementById('passwordStrengthBar');
+
+        let strength = 0;
+        if (password.length >= 6) strength++;
+        if (password.length >= 10) strength++;
+        if (/[A-Z]/.test(password) && /[a-z]/.test(password)) strength++;
+        if (/\d/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+        strengthBar.className = 'password-strength-bar';
+        if (strength <= 2) strengthBar.classList.add('weak');
+        else if (strength <= 4) strengthBar.classList.add('medium');
+        else strengthBar.classList.add('strong');
+    });
+
+    // Form submission with AJAX
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const form = this;
+        const formData = new FormData(form);
+        const csrfToken = document.querySelector('input[name="_csrf"]').value;
+        const signupBtn = document.getElementById('signupBtn');
+        const signupBtnText = document.getElementById('signupBtnText');
+        const signupBtnSpinner = document.getElementById('signupBtnSpinner');
+        const alertContainer = document.getElementById('alertContainer');
+
+        // Show loading state
+        signupBtn.disabled = true;
+        signupBtnText.classList.add('d-none');
+        signupBtnSpinner.classList.remove('d-none');
+        alertContainer.innerHTML = '';
+
+        fetch('/customer/signup', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: formData,
+            redirect: 'manual'
+        })
+            .then(response => {
+                if (response.type === 'opaqueredirect' || response.redirected) {
+                    // Success - show message and redirect
+                    alertContainer.innerHTML = `
+                    <div class="alert alert-success" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>Account created successfully! Redirecting...
+                    </div>
+                `;
+                    setTimeout(() => {
+                        window.location.href = '/customer/login';
+                    }, 1500);
+                } else if (response.ok) {
+                    return response.text();
+                } else {
+                    throw new Error('Signup failed');
+                }
+            })
+            .then(html => {
+                if (html && html.includes('error')) {
+                    throw new Error('Email already registered or invalid data');
+                } else if (html) {
+                    alertContainer.innerHTML = `
+                    <div class="alert alert-success" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>Account created! Redirecting to login...
+                    </div>
+                `;
+                    setTimeout(() => {
+                        window.location.href = '/customer/login';
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                alertContainer.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>${error.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+                // Reset button state
+                signupBtn.disabled = false;
+                signupBtnText.classList.remove('d-none');
+                signupBtnSpinner.classList.add('d-none');
+            });
+    });
+</script>
+</body>
+</html>

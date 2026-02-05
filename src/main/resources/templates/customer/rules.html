@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Rate Limit Rules - Rate Limiter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background: #f8f9fa; }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .method-badge {
+            font-family: monospace;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.65rem;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="#"><i class="bi bi-speedometer2 me-2"></i><strong>Rate Limiter</strong></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" th:href="@{/customer/dashboard}"><i class="bi bi-house-door me-1"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/customer/apikeys}"><i class="bi bi-key me-1"></i>API Keys</a></li>
+                <li class="nav-item"><a class="nav-link active" th:href="@{/customer/rules}"><i class="bi bi-sliders me-1"></i>Rules</a></li>
+            </ul>
+            <ul class="navbar-nav">
+                <!-- Logout Form -->
+                <form method="post" th:action="@{/customer/logout}" style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </button>
+                </form>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-sliders me-2"></i>Your Rate Limit Rules</h1>
+            <p class="text-muted mb-0">Configure custom rate limits for your endpoints</p>
+        </div><a th:href="@{/customer/rules/new}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Create New Rule
+    </a>
+    </div>
+
+    <!-- Alert Container -->
+    <div id="alertContainer"></div>
+
+    <!-- Server-side messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Rules List -->
+    <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Custom Rules</h5>
+            <span class="badge bg-primary" id="ruleCount" th:text="${rules.size()} + ' rules'"></span>
+        </div>
+        <div class="card-body">
+            <div id="noRulesMsg" th:if="${#lists.isEmpty(rules)}" class="text-center text-muted py-5">
+                <i class="bi bi-sliders display-1"></i>
+                <p class="mt-3 lead">No custom rules configured</p>
+                <p>Create your first rule to override default rate limits for specific endpoints</p>
+                <a th:href="@{/customer/rules/new}" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle me-2"></i>Create First Rule
+                </a>
+            </div>
+            <div id="rulesTableContainer" th:unless="${#lists.isEmpty(rules)}">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="rulesTable">
+                        <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Method</th>
+                            <th>Limit</th>
+                            <th>Window</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="rule : ${rules}" th:data-rule-id="${rule.id}">
+                            <td><code th:text="${rule.endpoint}"></code></td>
+                            <td>
+                                <span class="badge method-badge"
+                                      th:classappend="${rule.httpMethod == 'GET' ? 'bg-success' :
+                                                      rule.httpMethod == 'POST' ? 'bg-primary' :
+                                                      rule.httpMethod == 'PUT' ? 'bg-warning' :
+                                                      rule.httpMethod == 'DELETE' ? 'bg-danger' : 'bg-secondary'}"
+                                      th:text="${rule.httpMethod}"></span>
+                            </td>
+                            <td>
+                                <strong th:text="${rule.allowedRequestCount}"></strong>
+                                <small class="text-muted">requests</small>
+                            </td>
+                            <td>
+                                <strong th:text="${rule.windowSizeSeconds}"></strong>
+                                <small class="text-muted">seconds</small>
+                            </td>
+                            <td>
+                                <button type="button"
+                                        class="btn btn-sm btn-danger delete-rule-btn"
+                                        th:data-rule-id="${rule.id}"
+                                        th:data-endpoint="${rule.endpoint}">
+                                    <i class="bi bi-trash me-1"></i>Delete
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="card mt-4">
+        <div class="card-header bg-white">
+            <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Understanding Rate Limits</h6>
+        </div>
+        <div class="card-body">
+            <ul class="mb-0">
+                <li><strong>Endpoint:</strong> The API path pattern (use * for wildcards, e.g., /api/*)</li>
+                <li><strong>Method:</strong> HTTP method (GET, POST, PUT, DELETE, or * for all)</li>
+                <li><strong>Limit:</strong> Maximum number of requests allowed</li>
+                <li><strong>Window:</strong> Time period in seconds for the rate limit</li>
+            </ul></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    const alertContainer = document.getElementById('alertContainer');
+
+    // Delete Rule with AJAX
+    document.querySelectorAll('.delete-rule-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const ruleId = this.dataset.ruleId;
+            const endpoint = this.dataset.endpoint;
+
+            if (!confirm(`Delete rate limit rule for "${endpoint}"?\n\nThis action cannot be undone.`)) return;
+
+            fetch(`/customer/rules/${ruleId}/delete`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken }
+            })
+                .then(response => response.ok ? response.text() : Promise.reject('Failed'))
+                .then(() => {
+                    showAlert('success', `Rule for "${endpoint}" deleted successfully`);
+                    document.querySelector(`tr[data-rule-id="${ruleId}"]`).remove();
+                    updateRuleCount();
+                })
+                .catch(() => showAlert('danger', 'Failed to delete rule'));
+        });
+    });
+
+    function showAlert(type, message) {
+        alertContainer.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show">
+                <i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill'} me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>`;
+        setTimeout(() => alertContainer.innerHTML = '', 3000);
+    }
+
+    function updateRuleCount() {
+        const count = document.querySelectorAll('#rulesTable tbody tr').length;
+        document.getElementById('ruleCount').textContent = count + ' rules';
+        if (count === 0) {
+            document.getElementById('rulesTableContainer').classList.add('d-none');
+            document.getElementById('noRulesMsg').classList.remove('d-none');
+        }
+    }
+</script>
+</body>
+</html>
