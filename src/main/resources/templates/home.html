@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Rate Guard - Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background: #f8f9fa; }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar-brand { font-weight: 700; font-size: 1.5rem; }
+        .welcome-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        .feature-card {
+            transition: all 0.3s ease;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            height: 100%;
+            overflow: hidden;
+        }
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+        }
+        .feature-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.25rem;
+        }
+        .icon-keys {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .icon-rules {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .icon-docs {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+        .card-body { text-align: center; padding: 1.75rem; }
+        .info-card { border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .info-card ol {
+            padding-left: 0;
+            list-style-position: inside;
+        }
+        .info-card li {
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}"><i class="bi bi-shield-lock-fill me-2"></i>Rate Guard</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" th:href="@{/customer/dashboard}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/customer/apikeys}">API Keys</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/customer/rules}">Rules</a></li>
+                <li class="nav-item"><a class="nav-link" href="/docs">Docs</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Welcome Card -->
+    <div class="welcome-card">
+        <h2 class="mb-2" style="font-weight:700;">Rate Guard: Centralized protection for distributed APIs</h2>
+        <p class="mb-3">Redis-backed sliding window rate limiting for bots, brute-force, and DDoS. Accurate across your entire cluster and fail-open for reliability.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-light" th:href="@{/customer/apikeys}"><i class="bi bi-key me-1"></i>Get API Key</a>
+            <a class="btn btn-outline-light" th:href="@{/customer/rules}"><i class="bi bi-sliders me-1"></i>Create Rule</a>
+            <a class="btn btn-outline-light" href="/docs"><i class="bi bi-book me-1"></i>View Docs</a>
+        </div>
+    </div>
+
+    <!-- Feature Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body">
+                    <div class="feature-icon icon-keys"><i class="bi bi-key-fill"></i></div>
+                    <h5 class="mb-2">API Keys</h5>
+                    <p class="text-muted mb-3">Generate and revoke keys instantly for secure access.</p>
+                    <a class="btn btn-primary" th:href="@{/customer/apikeys}">Manage Keys</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body">
+                    <div class="feature-icon icon-rules"><i class="bi bi-sliders"></i></div>
+                    <h5 class="mb-2">Rate Limit Rules</h5>
+                    <p class="text-muted mb-3">Define limits per endpoint and method.</p>
+                    <a class="btn btn-primary" th:href="@{/customer/rules}">View Rules</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body">
+                    <div class="feature-icon icon-docs"><i class="bi bi-book"></i></div>
+                    <h5 class="mb-2">Documentation</h5>
+                    <p class="text-muted mb-3">Simple HTTP API to check requests in real time.</p>
+                    <a class="btn btn-primary" href="/docs">Read Docs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Why Rate Guard and Getting Started -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card info-card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-question-circle me-2"></i>Why Rate Guard?</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">In distributed systems, traditional rate limiting fails:</p>
+                    <ul class="mb-0">
+                        <li><strong>Per-server counters</strong> are isolated and easily bypassed across load balancers.</li>
+                        <li><strong>Fixed-window algorithms</strong> create bursty traffic at interval boundaries.</li>
+                        <li><strong>Partial failures</strong> can block legitimate users if not handled properly.</li>
+                    </ul>
+                    <p class="mt-2 mb-0">Rate Guard provides centralized, accurate limiting with Redis-backed sliding windows and fail-open reliability.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card info-card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Getting started</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li class="mb-2">Generate an API key.</li>
+                        <li class="mb-2">Create rules for your endpoints.</li>
+                        <li>Integrate the check endpoint in your app.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About the Developer -->
+    <div class="row mb-4">
+        <div class="col-md-8 mx-auto">
+            <div class="card info-card">
+                <div class="card-body text-center">
+                    <h5 class="mb-3"><i class="bi bi-person-circle me-2"></i>About the Developer</h5>
+                    <p class="mb-3">Have feedback or questions? I'd love to hear from you! Connect with me for suggestions, improvements, or collaboration opportunities.</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="mailto:vasan12sp@zohomail.in" class="btn btn-outline-primary"><i class="bi bi-envelope me-1"></i>Email Me</a>
+                        <a href="https://linkedin.com/in/vasan12sp" target="_blank" class="btn btn-outline-primary"><i class="bi bi-linkedin me-1"></i>LinkedIn</a>
+                        <a href="https://vasan12sp.is-a.dev" target="_blank" class="btn btn-outline-primary"><i class="bi bi-briefcase me-1"></i>Portfolio</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

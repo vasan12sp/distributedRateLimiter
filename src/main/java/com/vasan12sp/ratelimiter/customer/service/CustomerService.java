@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Service
 public class
@@ -39,27 +40,41 @@ CustomerService {
 
     @Transactional
     public User registerUser(String email, String password, String name, String companyName) {
-        if (userRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Email already registered");
+        // Normalize inputs
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+        String normalizedCompany = companyName == null ? null : companyName.trim();
+
+        if (normalizedEmail == null || normalizedEmail.isEmpty()) {
+            throw new IllegalArgumentException("Invalid email");
         }
-        if (companyRepository.existsByName(companyName)) {
+
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new IllegalArgumentException("Email already exists — please login");
+        }
+        if (companyRepository.existsByName(normalizedCompany)) {
             throw new IllegalArgumentException("Company name already taken");
         }
 
         // Create company
         Company company = new Company();
-        company.setName(companyName);
-        company = companyRepository.save(company);
+        company.setName(normalizedCompany);
 
-        // Create user
-        User user = new User();
-        user.setEmail(email);
-        user.setPasswordHash(passwordEncoder.encode(password));
-        user.setName(name);
-        user.setCompany(company);
-        user.setRole("OWNER");
+        try {
+            company = companyRepository.save(company);
 
-        return userRepository.save(user);
+            // Create user
+            User user = new User();
+            user.setEmail(normalizedEmail);
+            user.setPasswordHash(passwordEncoder.encode(password));
+            user.setName(name);
+            user.setCompany(company);
+            user.setRole("OWNER");
+
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            // Likely a unique constraint violation (email or company) due to a race condition
+            throw new IllegalArgumentException("Email or company already exists — please login or choose another company name");
+        }
     }
 
     public User findByEmail(String email) {
@@ -93,7 +108,15 @@ CustomerService {
     }
 
     public List<RateLimitRuleEntity> getRulesForUser(User user) {
-        return rateLimitRuleRepository.findByCompanyId(user.getCompany().getId());
+        return rateLimitRuleRepository.findByCompanyIdOrderByCreatedAtDesc(user.getCompany().getId());
+    }
+
+    public List<ApiKey> getActiveApiKeysForUser(User user) {
+        return apiKeyRepository.findByCompanyIdAndActiveOrderByCreatedAtDesc(user.getCompany().getId(), true);
+    }
+
+    public List<ApiKey> getRevokedApiKeysForUser(User user) {
+        return apiKeyRepository.findByCompanyIdAndActiveOrderByCreatedAtDesc(user.getCompany().getId(), false);
     }
 
     @Transactional
@@ -118,6 +141,36 @@ CustomerService {
         }
 
         rateLimitRuleRepository.delete(rule);
+    }
+
+    @Transactional(readOnly = true)
+    public RateLimitRuleEntity getRuleForUser(User user, Long ruleId) {
+        RateLimitRuleEntity rule = rateLimitRuleRepository.findById(ruleId)
+                .orElseThrow(() -> new IllegalArgumentException("Rule not found"));
+
+        if (!rule.getCompany().getId().equals(user.getCompany().getId())) {
+            throw new SecurityException("Not authorized to view this rule");
+        }
+
+        return rule;
+    }
+
+    @Transactional
+    public RateLimitRuleEntity updateRule(User user, Long ruleId, String endpoint, String httpMethod,
+                                          int allowedRequestCount, int windowSizeSeconds) {
+        RateLimitRuleEntity rule = rateLimitRuleRepository.findById(ruleId)
+                .orElseThrow(() -> new IllegalArgumentException("Rule not found"));
+
+        if (!rule.getCompany().getId().equals(user.getCompany().getId())) {
+            throw new SecurityException("Not authorized to update this rule");
+        }
+
+        rule.setEndpoint(endpoint);
+        rule.setHttpMethod(httpMethod);
+        rule.setAllowedRequestCount(allowedRequestCount);
+        rule.setWindowSizeSeconds(windowSizeSeconds);
+
+        return rateLimitRuleRepository.save(rule);
     }
 
     public User authenticateUser(String email, String password) {

@@ -5,12 +5,17 @@ import com.vasan12sp.ratelimiter.admin.model.RateLimitRuleEntity;
 import com.vasan12sp.ratelimiter.customer.model.User;
 import com.vasan12sp.ratelimiter.customer.service.CustomerService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/customer")
@@ -37,23 +42,50 @@ public class CustomerDashboardController {
         User user = getAuthenticatedUser(session);
         if (user == null) return "redirect:/customer/login";
 
-        List<ApiKey> apiKeys = customerService.getApiKeysForUser(user);
-        model.addAttribute("apiKeys", apiKeys);
+        List<ApiKey> activeKeys = customerService.getActiveApiKeysForUser(user);
+        List<ApiKey> revokedKeys = customerService.getRevokedApiKeysForUser(user);
+        model.addAttribute("activeApiKeys", activeKeys);
+        model.addAttribute("revokedApiKeys", revokedKeys);
         model.addAttribute("company", user.getCompany());
+        model.addAttribute("totalKeyCount", activeKeys.size() + revokedKeys.size());
         return "customer/apikeys";
     }
 
     @PostMapping("/apikeys/generate")
-    public String generateApiKey(HttpSession session, RedirectAttributes redirectAttributes) {
+    public Object generateApiKey(HttpSession session,
+                                 HttpServletRequest request,
+                                 RedirectAttributes redirectAttributes) {
         User user = getAuthenticatedUser(session);
-        if (user == null) return "redirect:/customer/login";
+        boolean isAjax = "XMLHttpRequest".equals(request.getHeader("X-Requested-With")) ||
+                (request.getHeader("Accept") != null && request.getHeader("Accept").contains("application/json"));
+
+        if (user == null) {
+            if (isAjax) {
+                Map<String, String> body = new HashMap<>();
+                body.put("error", "unauthenticated");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+            }
+            return "redirect:/customer/login";
+        }
 
         try {
             ApiKey apiKey = customerService.generateApiKey(user);
-            redirectAttributes.addFlashAttribute("successMessage",
-                    "API Key generated: " + apiKey.getKeyValue());
+            if (isAjax) {
+                Map<String, String> body = new HashMap<>();
+                body.put("apiKey", apiKey.getKeyValue());
+                return ResponseEntity.ok(body);
+            } else {
+                // Avoid placing raw key in flash; show a generic notice instead
+                redirectAttributes.addFlashAttribute("successMessage", "API Key generated");
+            }
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            if (isAjax) {
+                Map<String, String> body = new HashMap<>();
+                body.put("error", e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            }
         }
         return "redirect:/customer/apikeys";
     }
@@ -93,6 +125,41 @@ public class CustomerDashboardController {
         return "customer/rule-form";
     }
 
+    @GetMapping("/rules/edit/{id}")
+    public String editRuleForm(@PathVariable Long id, HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+        User user = getAuthenticatedUser(session);
+        if (user == null) return "redirect:/customer/login";
+
+        try {
+            RateLimitRuleEntity rule = customerService.getRuleForUser(user, id);
+            model.addAttribute("rule", rule);
+            return "customer/rule-form";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/customer/rules";
+        }
+    }
+
+    @PostMapping("/rules/{id}/update")
+    public String updateRule(@PathVariable Long id,
+                             @RequestParam String endpoint,
+                             @RequestParam String httpMethod,
+                             @RequestParam int allowedRequestCount,
+                             @RequestParam int windowSizeSeconds,
+                             HttpSession session,
+                             RedirectAttributes redirectAttributes) {
+        User user = getAuthenticatedUser(session);
+        if (user == null) return "redirect:/customer/login";
+
+        try {
+            customerService.updateRule(user, id, endpoint, httpMethod, allowedRequestCount, windowSizeSeconds);
+            redirectAttributes.addFlashAttribute("successMessage", "Rule updated successfully");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/customer/rules";
+    }
+
     @PostMapping("/rules/create")
     public String createRule(@RequestParam String endpoint,
                              @RequestParam String httpMethod,
@@ -113,17 +180,38 @@ public class CustomerDashboardController {
     }
 
     @PostMapping("/rules/{ruleId}/delete")
-    public String deleteRule(@PathVariable Long ruleId,
+    public Object deleteRule(@PathVariable Long ruleId,
                              HttpSession session,
+                             HttpServletRequest request,
                              RedirectAttributes redirectAttributes) {
         User user = getAuthenticatedUser(session);
-        if (user == null) return "redirect:/customer/login";
+        boolean isAjax = "XMLHttpRequest".equals(request.getHeader("X-Requested-With")) ||
+                (request.getHeader("Accept") != null && request.getHeader("Accept").contains("application/json"));
+        if (user == null) {
+            if (isAjax) {
+                Map<String, String> body = new HashMap<>();
+                body.put("error", "unauthenticated");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+            }
+            return "redirect:/customer/login";
+        }
 
         try {
             customerService.deleteRule(user, ruleId);
+            if (isAjax) {
+                Map<String, String> body = new HashMap<>();
+                body.put("status", "deleted");
+                return ResponseEntity.ok(body);
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Rule deleted successfully");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            if (isAjax) {
+                Map<String, String> body = new HashMap<>();
+                body.put("error", e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            }
         }
         return "redirect:/customer/rules";
     }

@@ -43,7 +43,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/", "/customer/signup", "/customer/login").permitAll()
+                        .requestMatchers("/", "/home", "/customer/signup", "/customer/login").permitAll()
                         .requestMatchers("/admin/login").permitAll()
                         .requestMatchers("/error", "/css/**", "/js/**", "/images/**").permitAll()
 
@@ -99,4 +99,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-

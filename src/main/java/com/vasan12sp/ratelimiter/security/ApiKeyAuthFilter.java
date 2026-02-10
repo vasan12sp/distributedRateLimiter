@@ -30,9 +30,18 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
+        // Don't filter customer/admin pages, h2-console, actuator, root or error page
         return path.startsWith("/customer") ||
                 path.startsWith("/admin") ||
                 path.startsWith("/h2-console") ||
+                path.startsWith("/actuator") ||
+                path.startsWith("/css") ||
+                path.startsWith("/js") ||
+                path.startsWith("/images") ||
+                path.equals("/favicon.ico") ||
+                path.equals("/") ||
+                path.equals("/docs") ||
+                path.equals("/home") ||
                 path.equals("/error");
     }
 

@@ -44,6 +44,8 @@ public class SessionAuthFilter extends OncePerRequestFilter {
                 requestURI.startsWith("/js") ||
                 requestURI.startsWith("/images") ||
                 requestURI.equals("/") ||
+                requestURI.equals("/home") ||
+                requestURI.equals("/docs") ||
                 requestURI.equals("/error")) {
             filterChain.doFilter(request, response);
             return;

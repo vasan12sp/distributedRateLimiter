@@ -38,6 +38,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         return path.startsWith("/customer") ||
                 path.startsWith("/admin") ||
                 path.startsWith("/h2-console") ||
+                path.equals("/") ||
+                path.equals("/docs") ||
+                path.equals("/home") ||
+                path.startsWith("/actuator") ||
                 path.equals("/error");
     }
 

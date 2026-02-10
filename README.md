@@ -1,5 +1,3 @@
-
-
 # 🚦 Distributed Rate Limiter as a Service
 
 A **Distributed Rate Limiting Service** built using **Spring Boot and Redis** that can be used as a central service to protect APIs from abuse, overload, and malicious traffic. The system implements a **Redis-based Sliding Window algorithm**, is designed to work in distributed environments, and follows a **fail-open strategy** for high availability.
@@ -26,9 +24,9 @@ A naive rate-limiting approach (like keeping counters in application memory) fai
 
 ---
 
-## ✅ What is a Rate Limiter?
+## ✅ What is Rate Guard?
 
-A **rate limiter** controls how many requests a user can make within a given time window.
+A **rate guard** controls how many requests a user can make within a given time window.
 
 Examples of rules:
 
@@ -42,9 +40,9 @@ If the limit is exceeded, the system returns:
 
 ---
 
-## ☁️ What is “Rate Limiter as a Service”?
+## ☁️ What is “Rate Guard as a Service”?
 
-Instead of every application implementing its own rate-limiting logic, this project provides a **centralized rate-limiting service** that other applications can call before processing requests.
+Instead of every application implementing its own rate-limiting logic, this project provides a **centralized rate-guarding service** that other applications can call before processing requests.
 
 Applications simply send a request to this service asking:
 
@@ -54,13 +52,13 @@ Applications simply send a request to this service asking:
 
 ## 🏗️ High-Level System Flow
 
-User → Application → Rate Limiter Service → Redis → Allow or Block Decision
+User → Application → Rate Guard Service → Redis → Allow or Block Decision
 
 Steps:
 
 1. User sends a request to an application
-2. The application calls the Rate Limiter Service
-3. The Rate Limiter checks Redis for recent requests
+2. The application calls the Rate Guard Service
+3. Rate Guard checks Redis for recent requests
 4. If under limit → request is allowed
 5. If over limit → request is rejected with 429
 
@@ -236,4 +234,3 @@ mvn spring-boot:run
 MIT License
 
 ---
-

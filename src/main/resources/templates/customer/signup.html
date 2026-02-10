@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-    <title>Sign Up - Rate Limiter</title>
+    <title>Sign Up - Rate Guard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
@@ -99,7 +99,7 @@
     <div class="signup-header">
         <i class="bi bi-person-plus-fill"></i>
         <h2 class="mb-0 fw-bold">Create Account</h2>
-        <p class="mb-0 opacity-75">Join Rate Limiter today</p>
+        <p class="mb-0 opacity-75">Join Rate Guard today</p>
     </div>
 
     <div class="signup-body">
@@ -145,12 +145,12 @@
                        name="password"
                        placeholder="Password"
                        required
-                       minlength="6">
+                       minlength="8">
                 <label for="password"><i class="bi bi-lock me-2"></i>Password</label>
             </div><div class="password-strength">
             <div class="password-strength-bar" id="passwordStrengthBar"></div>
         </div>
-            <small class="text-muted d-block mb-3">Minimum 6 characters</small>
+            <small class="text-muted d-block mb-3">Minimum 8 characters</small>
 
             <div class="form-floating">
                 <input type="text"
@@ -188,7 +188,7 @@
         const strengthBar = document.getElementById('passwordStrengthBar');
 
         let strength = 0;
-        if (password.length >= 6) strength++;
+        if (password.length >= 8) strength++;
         if (password.length >= 10) strength++;
         if (/[A-Z]/.test(password) && /[a-z]/.test(password)) strength++;
         if (/\d/.test(password)) strength++;
@@ -221,40 +221,44 @@
         fetch('/customer/signup', {
             method: 'POST',
             headers: {
-                'X-CSRF-TOKEN': csrfToken
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
             },
-            body: formData,
-            redirect: 'manual'
+            body: formData
         })
-            .then(response => {
-                if (response.type === 'opaqueredirect' || response.redirected) {
-                    // Success - show message and redirect
+            .then(async response => {
+                // If server returns JSON (AJAX path), parse it
+                const contentType = response.headers.get('Content-Type') || '';
+                if (contentType.includes('application/json')) {
+                    const body = await response.json();
+                    if (!response.ok) throw new Error(body.error || 'Signup failed');
+                    // success
                     alertContainer.innerHTML = `
                     <div class="alert alert-success" role="alert">
                         <i class="bi bi-check-circle-fill me-2"></i>Account created successfully! Redirecting...
                     </div>
                 `;
-                    setTimeout(() => {
-                        window.location.href = '/customer/login';
-                    }, 1500);
-                } else if (response.ok) {
-                    return response.text();
+                    setTimeout(() => { window.location.href = '/customer/login'; }, 900);
                 } else {
-                    throw new Error('Signup failed');
-                }
-            })
-            .then(html => {
-                if (html && html.includes('error')) {
-                    throw new Error('Email already registered or invalid data');
-                } else if (html) {
-                    alertContainer.innerHTML = `
-                    <div class="alert alert-success" role="alert">
-                        <i class="bi bi-check-circle-fill me-2"></i>Account created! Redirecting to login...
-                    </div>
-                `;
-                    setTimeout(() => {
-                        window.location.href = '/customer/login';
-                    }, 1500);
+                    // non-JSON behavior (fallback to redirect handling)
+                    if (response.type === 'opaqueredirect' || response.redirected) {
+                        alertContainer.innerHTML = `
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>Account created successfully! Redirecting...
+                        </div>
+                    `;
+                        setTimeout(() => { window.location.href = '/customer/login'; }, 900);
+                    } else if (response.ok) {
+                        // Some servers respond with HTML – treat as success
+                        alertContainer.innerHTML = `
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>Account created! Redirecting to login...
+                        </div>
+                    `;
+                        setTimeout(() => { window.location.href = '/customer/login'; }, 900);
+                    } else {
+                        throw new Error('Signup failed');
+                    }
                 }
             })
             .catch(error => {

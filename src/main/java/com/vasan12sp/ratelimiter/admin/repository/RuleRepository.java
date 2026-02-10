@@ -16,5 +16,7 @@ public interface RuleRepository extends JpaRepository<RateLimitRuleEntity, Long>
             Long companyId, String endpoint, String httpMethod);
 
     List<RateLimitRuleEntity> findByEndpointAndHttpMethod(String endpoint, String httpMethod);
-}
 
+    // New: fetch rules for company newest first
+    List<RateLimitRuleEntity> findByCompanyIdOrderByCreatedAtDesc(Long companyId);
+}

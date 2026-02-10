@@ -18,4 +18,7 @@ public interface ApiKeyRepository extends JpaRepository<ApiKey, Long> {
     Optional<ApiKey> findByKeyValueWithCompany(@Param("keyValue") String keyValue);
 
     List<ApiKey> findByCompanyId(Long companyId);
+
+    // New convenience methods
+    List<ApiKey> findByCompanyIdAndActiveOrderByCreatedAtDesc(Long companyId, boolean active);
 }
