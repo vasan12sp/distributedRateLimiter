@@ -1,4 +1,4 @@
-# 🚦 Distributed Rate Limiter as a Service
+# 🚦 RateGuard - Distributed Rate Limiter as a Service
 
 A **Distributed Rate Limiting Service** built using **Spring Boot and Redis** that can be used as a central service to protect APIs from abuse, overload, and malicious traffic. The system implements a **Redis-based Sliding Window algorithm**, is designed to work in distributed environments, and follows a **fail-open strategy** for high availability.
 
@@ -197,26 +197,7 @@ mvn spring-boot:run
 
 ---
 
-## 📡 Example API Response
 
-### Allowed
-
-```
-{
-  "allowed": true,
-  "remaining": 95
-}
-```
-
-### Blocked
-
-```
-{
-  "allowed": false,
-  "error": "Rate limit exceeded",
-  "retryAfter": 45
-}
-```
 
 ---
 
