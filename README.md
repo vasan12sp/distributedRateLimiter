@@ -1,7 +1,7 @@
 
-# 🚦 RateGuard — Distributed Rate Limiter as a Service
+# 🚦 RateGuard — Rate Limiter as a Service
 
-> A high-performance, distributed rate limiting service built with Spring Boot and Redis using a Sliding Window algorithm to protect APIs from abuse, overload, and malicious traffic.
+> A high-performance, rate limiting service built with Spring Boot and Redis using a Sliding Window algorithm to protect APIs from abuse, overload, and malicious traffic.
 
 ![Java](https://img.shields.io/badge/Java-17-orange)
 ![Spring Boot](https://img.shields.io/badge/SpringBoot-3.x-green)
@@ -14,7 +14,7 @@
 
 ## 📖 Overview
 
-**RateGuard** is a centralized, distributed rate limiting service designed to protect APIs and microservices from excessive traffic, abuse, and malicious attacks.
+**RateGuard** is a centralized, rate limiting service designed to protect APIs and microservices from excessive traffic, abuse, and malicious attacks on distributed systems.
 
 Unlike traditional in-memory rate limiters that fail in distributed environments, RateGuard uses **Redis as a shared distributed store** and implements a **Sliding Window algorithm** for accurate and reliable rate limiting across multiple servers.
 
@@ -47,7 +47,7 @@ RateGuard solves this by using a **centralized distributed Redis store**.
 
 ## ✨ Key Features
 
-- Distributed rate limiting using Redis
+- Rate limiting service using Redis
 - Sliding Window algorithm for precise request control
 - Centralized Rate Limiter as a Service (RLaaS)
 - High-performance and low latency
